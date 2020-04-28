@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package raft;
+
+service Raft {
+    // RequestVote RPC method, candidate use this method to request vote
+    rpc RequestVote(RequestVoteArgs) returns (RequestVoteReply) {}
+
+    // AppendEntries RPC method, leader use this method to append entries or send heartbeat
+    rpc AppendEntries(AppendEntriesArgs) returns (AppendEntriesReply) {}
+
+    // InstallSnapshot RPC method, leader use this method to send snapshot to follower to save time and memory
+    rpc InstallSnapshot(InstallSnapshotArgs) returns (InstallSnapshotReply) {}
+}
+
+// argument of RequestVote RPC
+message RequestVoteArgs {
+    sint64 Term = 1;         // current term
+    int32 CandidateId = 2;   // candidate's id
+    sint64 LastLogIndex = 3; // index of candidate's last log entry
+    sint64 LastLogTerm = 4;  // term of candidate's last log entry
+}
+
+// reply of RequestVote RPC
+message RequestVoteReply {
+    sint64 Term = 1;       // follower's id
+    bool VoteGranted = 2;  // true if vote for the candidate
+}
+
+// argument of AppendEntries RPC
+message AppendEntriesArgs {
+    sint64 Term = 1;                 // leader's current term
+    int32 LeaderId = 2;              // leader's id
+    sint64 PrevLogIndex = 3;         // index of log entry immediately preceding new ones
+    sint64 PrevLogTerm = 4;          // term of PrevLogIndex entry
+    sint64 LeaderCommit = 5;         // leader's commitIndex
+    repeated LogEntry Entries = 6;   // log entries to store, empty for heartbeat
+}
+
+// reply of AppendEntries RPC
+message AppendEntriesReply {
+    sint64 Term = 1;             // follower's term, for leader to update itself
+    bool Success = 2;            // true if follower contained entry matching prevLogIndex and prevLogTerm
+    sint64 ConflictTerm = 3;     // if prevLogIndex not match, conflictTerm = logs[prevLogIndex].Term
+    sint64 ConflictIndex = 4;    // search log for the first index whose entry term equal to conflictTerm
+}
+
+// argument for InstallSnapshot RPC
+message InstallSnapshotArgs {
+    sint64 Term = 1;                // leader's term
+    int32 LeaderId = 2;             // leader's id
+    sint64 LastIncludedIndex = 3;   // the snapshot replaces all entries up through and including this index
+    sint64 LastIncludedTerm = 4;    // term of lastIncludedIndex
+    bytes Data = 5;                // raw bytes of the snapshot chunk, starting at offset
+    // todo need to optimize, because the size of Data may be very large, so use stream
+    // sint64 Offset = 6;           // byte offset where chunk is positioned in the snapshot file
+    // bool Done = 7;               // true if this is the last chunk
+}
+
+// reply for InstallSnapshot RPC
+message InstallSnapshotReply {
+    sint64 Term = 1;      // currentTerm, for leader to update itself
+}
+
+// Raft's log entry
+message LogEntry {
+    sint64 Term = 1;   // current entry's term
+    bytes Command = 2;    // command to execute for server
+}
+
+message State {
+    sint64 CurrentTerm = 1;
+    int32 VotedFor = 2;
+    sint64 LastIncludedIndex = 3;
+    sint64 LastIncludedTerm = 4;
+    repeated LogEntry Logs = 5;
+}

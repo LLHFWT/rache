@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package kv;
+
+import "master.proto";
+
+service Group {
+    // Put or Append
+    rpc PutAppend (PutAppendArgs) returns (PutAppendReply) {
+    }
+    // Get
+    rpc Get (GetArgs) returns (GetReply) {
+    }
+    // Clear Shard
+    rpc ClearShard (ClearShardArgs) returns (ClearShardReply) {
+    }
+    // Transfer Shard
+    rpc TransferShard (TransferShardArgs) returns (TransferShardReply) {
+    }
+}
+
+message PutAppendArgs {
+    string Key = 1;
+    string Value = 2;
+    string Op = 3; //Put or Append
+    sint64 ClientId = 4;
+    sint64 Sequence = 5;
+}
+
+message PutAppendReply {
+    bool WrongLeader = 1;
+    string Err = 2;
+}
+
+message GetArgs {
+    string Key = 1;
+    sint64 ClientId = 2;
+    sint64 Sequence = 3;
+}
+
+message GetReply {
+    bool WrongLeader = 1;
+    string Err = 2;
+    string Value = 3;
+}
+
+message ClearShardArgs {
+    int32 Num = 1;
+    int32 ShardIndex = 2;
+}
+
+message ClearShardReply {
+    bool WrongLeader = 1;
+    string Err = 2;
+}
+
+message TransferShardArgs {
+    int32 Num = 1;
+    repeated int32 ShardIds = 2;
+}
+
+message TransferShardReply {
+    string Err = 1;
+    repeated KVData Data = 2;
+    map<sint64, sint64> ClientToSeq = 3;
+}
+
+message KVOp {
+    string Command = 1;
+    sint64 ClientId = 2;
+    sint64 Sequence = 3;
+    string Key = 4;
+    string Value = 5;
+    int32 ConfigNum = 6;
+    int32 ShardIndex = 7;
+    map<sint64, sint64> ClientToSeq = 8;
+    repeated KVData Data = 9;
+    Config MasterConfig = 10;
+}
+
+message KVData {
+    map<string, string> store = 1;
+}

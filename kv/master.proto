@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package kv;
+
+service Master {
+    // RPC方法，向集群中加入一系列的replica group
+    rpc Join (JoinArgs) returns (JoinReply) {
+    }
+
+    // RPC方法，从集群中移除一些group
+    rpc Leave (LeaveArgs) returns (LeaveReply) {
+    }
+
+    // RPC方法，将shard从一个group移动到另一个
+    rpc Move (MoveArgs) returns (MoveReply) {
+    }
+
+    // RPC方法，查询指定的config
+    rpc Query (QueryArgs) returns (QueryReply) {
+    }
+}
+
+message JoinArgs {
+    map<int32, Servers> Groups = 1; // group id -> Servers
+    sint64 Sequence = 2;
+    sint64 ClientId = 3;
+}
+
+message JoinReply {
+    bool WrongLeader = 1;
+    string Err = 2;
+}
+
+// 存放的server的列表，应为IP地址
+message Servers {
+    repeated string ServerList = 1;
+}
+
+message LeaveArgs {
+    repeated int32 GIDs = 1;
+    sint64 Sequence = 2;
+    sint64 ClientId = 3;
+}
+
+message LeaveReply {
+    bool WrongLeader = 1;
+    string Err = 2;
+}
+
+message MoveArgs {
+    int32 Shard = 1;
+    int32 GID = 2;
+    sint64 Sequence = 3;
+    sint64 ClientId = 4;
+}
+
+message MoveReply {
+    bool WrongLeader = 1;
+    string Err = 2;
+}
+
+message QueryArgs {
+    int32 Num = 1;
+    sint64 Sequence = 2;
+    sint64 ClientId = 3;
+}
+
+message QueryReply {
+    bool WrongLeader = 1;
+    string Err = 2;
+    Config Config = 3;
+}
+
+// master的config信息
+message Config {
+    int32 Num = 1; // 当前config的序号
+    repeated int32 Shards = 2; // shard列表
+    map<int32, Servers> Groups = 3; // 所有的group groupId->server addrList
+}
+
+// 写入raft的操作
+message MasterOp {
+    string Command = 1;
+    sint64 ClientId = 2;
+    sint64 Sequence = 3;
+    // arguments of Join RPC method
+    map<int32, Servers> Groups = 4;
+    // arguments of Leave RPC method
+    repeated int32 GIDs = 5;
+    // arguments of Move RPC method
+    int32 Shard = 6;
+    int32 GID = 7;
+    // arguments of Query RPC method
+    int32 Num = 8;
+}
